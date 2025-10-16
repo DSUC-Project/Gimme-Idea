@@ -1,0 +1,67 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Gimme Idea! - Home</title>
+  
+  <!-- CSS -->
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+  
+  <!-- Matrix Background Effect -->
+  <section>
+    <!-- 280 spans sẽ được generate bằng JS, không cần hard-code nữa! -->
+  </section>
+
+  <!-- Logo Chính "GIMME IDEA!" -->
+  <div class="main-logo">
+    <h1>Gimme Idea !</h1>
+  </div>
+
+  <!-- 2 Nút Login & Register -->
+  <div class="home-buttons">
+    <a href="login.html" class="btn">Login</a>
+    <a href="register.html" class="btn">Register</a>
+  </div>
+
+  <!-- Nút Connect Wallet (Góc phải trên) -->
+  <button class="connect-wallet-btn" onclick="openWalletModal()">
+    Connect Wallet
+  </button>
+
+  <!-- Wallet Popup Modal -->
+  <div class="wallet-modal">
+    <div class="wallet-modal-content">
+      <!-- Nút đóng -->
+      <button class="close-modal" onclick="closeWalletModal()">✕</button>
+      
+      <h3>Connect Wallet</h3>
+      
+      <!-- Option 1: Phantom -->
+      <div class="wallet-option" onclick="connectPhantom()">
+        <img src="https://cryptologos.cc/logos/solana-sol-logo.png" alt="Phantom">
+        <span>Phantom Wallet</span>
+      </div>
+      
+      <!-- Option 2: Solflare -->
+      <div class="wallet-option" onclick="connectSolflare()">
+        <img src="https://cryptologos.cc/logos/solana-sol-logo.png" alt="Solflare">
+        <span>Solflare Wallet</span>
+      </div>
+      
+      <!-- Option 3: MetaMask -->
+      <div class="wallet-option" onclick="connectMetaMask()">
+        <img src="https://cryptologos.cc/logos/ethereum-eth-logo.png" alt="MetaMask">
+        <span>MetaMask</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- JavaScript -->
+  <script src="background.js"></script>
+  <script src="wallet.js"></script>
+  
+</body>
+</html>
