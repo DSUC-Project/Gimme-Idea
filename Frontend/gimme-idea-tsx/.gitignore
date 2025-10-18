@@ -2,6 +2,10 @@
 
 # dependencies
 /node_modules
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+.pnpm-debug.log*
 
 # next.js
 /.next/
@@ -10,18 +14,24 @@
 # production
 /build
 
-# debug
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-.pnpm-debug.log*
-
 # env files
-.env*
+.env
+.env*.local
+.env.development
+.env.test
+.env.production
 
 # vercel
 .vercel
+.vercel.json
 
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# testing
+/coverage
+
+# misc
+.DS_Store
+*.pem

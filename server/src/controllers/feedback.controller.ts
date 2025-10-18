@@ -242,7 +242,10 @@ export async function approveFeedback(req: Request, res: Response) {
     }
 
     const reward = parseFloat(rewardAmount);
-    const remaining = feedback.project.bountyAmount - feedback.project.bountyDistributed;
+    // Convert Prisma Decimal to number for arithmetic operations
+    const bountyAmount = parseFloat(feedback.project.bountyAmount.toString());
+    const bountyDistributed = parseFloat(feedback.project.bountyDistributed.toString());
+    const remaining = bountyAmount - bountyDistributed;
 
     if (reward > remaining) {
       return sendError(res, 'Reward exceeds remaining bounty', 'INSUFFICIENT_BOUNTY', null, 400);
