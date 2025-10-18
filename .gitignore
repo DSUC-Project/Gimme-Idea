@@ -1,0 +1,47 @@
+# Global ignores for the monorepo
+
+# Node
+**/node_modules/
+**/.pnp
+**/.pnp.js
+**/pnpm-lock.yaml
+**/yarn.lock
+**/package-lock.json
+
+# Builds / outputs
+**/dist/
+**/build/
+**/.next/
+**/out/
+**/.turbo/
+**/.cache/
+
+# Logs
+**/npm-debug.log*
+**/yarn-debug.log*
+**/yarn-error.log*
+**/.pnpm-debug.log*
+**/logs
+**/*.log
+
+# Env & secrets
+**/.env
+**/.env.*
+!.env.example
+
+# Coverage
+**/coverage/
+
+# Editors / OS
+.DS_Store
+Thumbs.db
+*.swp
+*.swo
+.idea/
+.vscode/
+
+# Misc
+**/*.tsbuildinfo
+**/.eslintcache
+**/.vercel
+
