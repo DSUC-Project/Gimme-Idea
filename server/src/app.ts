@@ -12,6 +12,9 @@ dotenv.config();
 
 const app = express();
 
+// Trust proxy - needed for Render, Heroku, and other cloud platforms
+app.set('trust proxy', 1);
+
 // CORS must come BEFORE helmet
 // Allow production domain and Vercel preview deployments
 const allowedOrigins = process.env.CLIENT_URL?.split(',') || ['*'];
