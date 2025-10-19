@@ -13,7 +13,27 @@ dotenv.config();
 const app = express();
 
 // CORS must come BEFORE helmet
-app.use(cors({ origin: process.env.CLIENT_URL?.split(',') || '*', credentials: true }));
+// Allow production domain and Vercel preview deployments
+const allowedOrigins = process.env.CLIENT_URL?.split(',') || ['*'];
+app.use(cors({
+  origin: (origin, callback) => {
+    // Allow requests with no origin (mobile apps, curl, etc)
+    if (!origin) return callback(null, true);
+
+    // Allow configured origins
+    if (allowedOrigins.includes('*') || allowedOrigins.includes(origin)) {
+      return callback(null, true);
+    }
+
+    // Allow Vercel preview deployments (*.vercel.app)
+    if (origin.endsWith('.vercel.app')) {
+      return callback(null, true);
+    }
+
+    callback(new Error('Not allowed by CORS'));
+  },
+  credentials: true
+}));
 
 // Configure helmet to be less strict in development
 app.use(helmet({
