@@ -4,11 +4,26 @@
 @custom-variant dark (&:is(.dark *));
 
 :root {
-  /* Custom color tokens for Gimme Idea theme */
-  --primary: #00d9ff;
-  --bg-dark: #000;
-  --card: #222;
-  --input: #333;
+  /* New Color Palette - Soft Pastel & Cyberpunk */
+  /* Homepage colors */
+  --purple-gradient-start: #8B7FD8;
+  --purple-gradient-end: #C9A7FF;
+  --soft-purple: #E0C3FC;
+  --lavender: #D4BBFF;
+
+  /* Dashboard colors */
+  --primary: #00E5FF; /* Cyan/Teal */
+  --primary-dark: #00BCD4;
+  --secondary: #9C27B0; /* Purple */
+  --secondary-light: #E040FB;
+  --accent-yellow: #FFD700; /* Gold */
+  --accent-yellow-light: #FFA500; /* Orange */
+
+  /* Base colors */
+  --bg-dark: #1a1a2e; /* Dark navy */
+  --bg-darker: #16213e;
+  --card: #2a2a4e;
+  --input: #3a3a5e;
   --white: #fff;
   --gray: #aaa;
 
@@ -134,16 +149,7 @@
   }
 }
 
-/* Custom animations for Matrix effect and popups */
-@keyframes matrixAnimate {
-  0% {
-    transform: translateY(-100%);
-  }
-  100% {
-    transform: translateY(100%);
-  }
-}
-
+/* Custom animations */
 @keyframes fadeIn {
   from {
     opacity: 0;
@@ -184,9 +190,59 @@
   }
 }
 
+@keyframes float {
+  0%, 100% {
+    transform: translateY(0px);
+  }
+  50% {
+    transform: translateY(-20px);
+  }
+}
+
+@keyframes gradient-shift {
+  0% {
+    background-position: 0% 50%;
+  }
+  50% {
+    background-position: 100% 50%;
+  }
+  100% {
+    background-position: 0% 50%;
+  }
+}
+
 /* Custom utility classes */
 .shadow-glow {
   text-shadow: 0 0 20px var(--primary), 0 0 40px var(--primary), 0 0 60px var(--primary);
+}
+
+.shadow-glow-cyan {
+  box-shadow: 0 0 20px rgba(0, 229, 255, 0.5), 0 0 40px rgba(0, 229, 255, 0.3);
+}
+
+.shadow-glow-purple {
+  box-shadow: 0 0 20px rgba(156, 39, 176, 0.5), 0 0 40px rgba(156, 39, 176, 0.3);
+}
+
+.glassmorphism {
+  background: rgba(255, 255, 255, 0.15);
+  backdrop-filter: blur(10px);
+  -webkit-backdrop-filter: blur(10px);
+  border: 1px solid rgba(255, 255, 255, 0.2);
+}
+
+.gradient-purple {
+  background: linear-gradient(135deg, var(--purple-gradient-start), var(--purple-gradient-end));
+  background-size: 200% 200%;
+  animation: gradient-shift 15s ease infinite;
+}
+
+.gradient-cyan-purple {
+  background: linear-gradient(135deg, var(--primary), var(--secondary));
+}
+
+.gradient-yellow {
+  background: linear-gradient(135deg, var(--accent-yellow), var(--accent-yellow-light));
 }
 
 .font-logo {
