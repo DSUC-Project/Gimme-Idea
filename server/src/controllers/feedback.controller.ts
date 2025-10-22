@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response.js';
 import prisma from '../prisma/client.js';
 import logger from '../utils/logger.js';
+import { transformFeedback } from '../utils/transformers.js';
 
 /**
  * Create feedback for a project
@@ -66,7 +67,9 @@ export async function createFeedback(req: Request, res: Response) {
 
     logger.info(`Feedback created: ${feedback.id} for project ${projectId} by user ${req.user.id}`);
 
-    return sendSuccess(res, { feedback }, 'Feedback submitted successfully!');
+    const formattedFeedback = transformFeedback(feedback as any);
+
+    return sendSuccess(res, { feedback: formattedFeedback }, 'Feedback submitted successfully!');
   } catch (error: any) {
     logger.error('Create feedback error:', error);
     return sendError(res, 'Failed to submit feedback', 'CREATE_FAILED', error.message, 500);
@@ -96,7 +99,9 @@ export async function getProjectFeedback(req: Request, res: Response) {
       orderBy: { createdAt: 'desc' },
     });
 
-    return sendSuccess(res, { feedback });
+    const transformed = feedback.map((item) => transformFeedback(item as any));
+
+    return sendSuccess(res, { feedback: transformed });
   } catch (error: any) {
     logger.error('Get feedback error:', error);
     return sendError(res, 'Failed to get feedback', 'GET_FAILED', error.message, 500);
@@ -159,7 +164,9 @@ export async function updateFeedback(req: Request, res: Response) {
 
     logger.info(`Feedback updated: ${id} by user ${req.user.id}`);
 
-    return sendSuccess(res, { feedback: updatedFeedback }, 'Feedback updated successfully!');
+    const formatted = transformFeedback(updatedFeedback as any);
+
+    return sendSuccess(res, { feedback: formatted }, 'Feedback updated successfully!');
   } catch (error: any) {
     logger.error('Update feedback error:', error);
     return sendError(res, 'Failed to update feedback', 'UPDATE_FAILED', error.message, 500);
