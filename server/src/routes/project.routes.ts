@@ -1,5 +1,5 @@
 import { Router } from 'express';
-import { verifyToken, requireRole } from '../middleware/auth.js';
+import { verifyToken, requireRole, optionalAuth } from '../middleware/auth.js';
 import { validateBody } from '../middleware/validation.js';
 import { createProjectSchema, updateProjectSchema } from '../validators/project.schemas.js';
 import {
@@ -16,7 +16,7 @@ import {
 const router = Router();
 
 // Public routes
-router.get('/', getProjects);
+router.get('/', optionalAuth, getProjects);
 
 // Protected routes (require authentication) - Must be before /:id routes to avoid conflicts
 router.post('/', verifyToken, requireRole(['BUILDER', 'BOTH']), validateBody(createProjectSchema), createProject);
@@ -24,7 +24,7 @@ router.get('/my/projects', verifyToken, getMyProjects);
 router.get('/bookmarked', verifyToken, getBookmarkedProjects);
 
 // Dynamic ID routes - Must be after specific routes
-router.get('/:id', getProjectById);
+router.get('/:id', optionalAuth, getProjectById);
 router.post('/:id/view', (req, res) => res.json({ success: true })); // View count already incremented in getProjectById
 router.post('/:id/bookmark', verifyToken, toggleBookmark);
 router.put('/:id', verifyToken, validateBody(updateProjectSchema), updateProject);

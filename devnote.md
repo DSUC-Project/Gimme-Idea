@@ -87,3 +87,13 @@ interface Feedback {
   status: 'pending' | 'approved' | 'rejected';
   createdAt: string;
 }
+---
+
+## Frontend ↔ Backend Integration Notes
+
+- New Next.js frontend lives in `Frontend/gimme-idea-frontend`. Configure `NEXT_PUBLIC_API_URL` (defaults to `http://localhost:5000/api`) so client-side requests reach the Express API.
+- Authentication tokens are stored in localStorage and automatically refreshed; backend exposes `/api/auth/*` plus new `/api/users` endpoints for profile data.
+- Project pages now call real endpoints (`/api/projects`, `/api/projects/:id`, `/api/projects/bookmarked`, `/api/projects/my/projects`). Feedback submission uses `/api/projects/:id/feedback`.
+- Profile updates call `/api/users/me`; transactions/earnings use `/api/users/me/transactions`.
+- Old UI (`Frontend/gimme-idea-legacy`) is preserved only for reference and is no longer wired into the build.
+

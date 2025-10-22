@@ -2,6 +2,7 @@ import type { Request, Response } from 'express';
 import { sendSuccess, sendError } from '../utils/response.js';
 import prisma from '../prisma/client.js';
 import logger from '../utils/logger.js';
+import { transformProject } from '../utils/transformers.js';
 
 /**
  * Create new project
@@ -51,7 +52,9 @@ export async function createProject(req: Request, res: Response) {
 
     logger.info(`Project created: ${project.id} by user ${req.user.id}`);
 
-    return sendSuccess(res, { project }, 'Project created successfully!');
+    const formattedProject = transformProject(project, req.user.id);
+
+    return sendSuccess(res, { project: formattedProject }, 'Project created successfully!');
   } catch (error: any) {
     logger.error('Create project error:', error);
     return sendError(res, 'Failed to create project', 'CREATE_FAILED', error.message, 500);
@@ -136,12 +139,7 @@ export async function getProjects(req: Request, res: Response) {
     });
 
     // Transform projects to include feedbackCount and isBookmarked
-    const transformedProjects = projects.map((project) => ({
-      ...project,
-      feedbackCount: project.feedback.length,
-      isBookmarked: req.user ? project.bookmarks.length > 0 : false,
-      bookmarks: undefined, // Remove bookmarks array from response
-    }));
+    const transformedProjects = projects.map((project) => transformProject(project as any, req.user?.id));
 
     return sendSuccess(res, {
       projects: transformedProjects,
@@ -214,13 +212,7 @@ export async function getProjectById(req: Request, res: Response) {
     });
 
     // Transform project to include feedbackCount and isBookmarked
-    const transformedProject = {
-      ...project,
-      userId: project.builderId, // Add userId field for frontend compatibility
-      feedbackCount: project.feedback.length,
-      isBookmarked: req.user ? project.bookmarks.length > 0 : false,
-      bookmarks: undefined, // Remove bookmarks array from response
-    };
+    const transformedProject = transformProject(project as any, req.user?.id);
 
     return sendSuccess(res, { project: transformedProject });
   } catch (error: any) {
@@ -292,7 +284,9 @@ export async function updateProject(req: Request, res: Response) {
 
     logger.info(`Project updated: ${project.id} by user ${req.user.id}`);
 
-    return sendSuccess(res, { project }, 'Project updated successfully!');
+    const formattedProject = transformProject(project as any, req.user.id);
+
+    return sendSuccess(res, { project: formattedProject }, 'Project updated successfully!');
   } catch (error: any) {
     logger.error('Update project error:', error);
     return sendError(res, 'Failed to update project', 'UPDATE_FAILED', error.message, 500);
@@ -376,7 +370,11 @@ export async function getMyProjects(req: Request, res: Response) {
       orderBy: { createdAt: 'desc' },
     });
 
-    return sendSuccess(res, { projects });
+    const transformed = projects.map((project) =>
+      transformProject(project as any, req.user!.id),
+    );
+
+    return sendSuccess(res, { projects: transformed });
   } catch (error: any) {
     logger.error('Get my projects error:', error);
     return sendError(res, 'Failed to get projects', 'GET_FAILED', error.message, 500);
@@ -473,11 +471,15 @@ export async function getBookmarkedProjects(req: Request, res: Response) {
     });
 
     // Transform to return just projects with feedbackCount
-    const projects = bookmarks.map((b) => ({
-      ...b.project,
-      feedbackCount: b.project.feedback.length,
-      isBookmarked: true,
-    }));
+    const projects = bookmarks.map((bookmark) =>
+      transformProject(
+        {
+          ...bookmark.project,
+          bookmarks: [{ id: bookmark.id, userId: req.user!.id }],
+        } as any,
+        req.user!.id,
+      ),
+    );
 
     return sendSuccess(res, { projects });
   } catch (error: any) {
