@@ -73,6 +73,34 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
     }
   }
 
+  const handleApproveFeedback = async (feedbackId: string) => {
+    try {
+      await feedbackApi.approve(feedbackId, { rewardAmount: 10, qualityScore: 75 })
+      setFeedbackItems((prev) =>
+        prev.map((item) =>
+          item.id === feedbackId ? { ...item, status: "APPROVED" as const } : item
+        )
+      )
+    } catch (err: any) {
+      console.error("[project] approve feedback failed:", err)
+      setError(err?.message || "Unable to approve feedback.")
+    }
+  }
+
+  const handleRejectFeedback = async (feedbackId: string) => {
+    try {
+      await feedbackApi.reject(feedbackId, { reason: "Rejected by project owner" })
+      setFeedbackItems((prev) =>
+        prev.map((item) =>
+          item.id === feedbackId ? { ...item, status: "REJECTED" as const } : item
+        )
+      )
+    } catch (err: any) {
+      console.error("[project] reject feedback failed:", err)
+      setError(err?.message || "Unable to reject feedback.")
+    }
+  }
+
   const aiSummary = useMemo(() => {
     return feedbackItems.find((item) => !item.reviewer)?.content?.overall
   }, [feedbackItems])
@@ -140,7 +168,30 @@ export default function ProjectPage({ params }: { params: { id: string } }) {
         <div className="space-y-4">
           {feedbackItems.length ? (
             feedbackItems.map((item) => (
-              <FeedbackItem key={item.id} feedback={item} isAI={!item.reviewer} aiConfidence={item.qualityScore ?? undefined} />
+              <div key={item.id} className="relative">
+                <FeedbackItem feedback={item} isAI={!item.reviewer} aiConfidence={item.qualityScore ?? undefined} />
+                {/* Show approve/reject buttons for project owner */}
+                {user && project && user.id === project.builderId && item.status === "PENDING" && (
+                  <div className="absolute top-4 right-4 flex gap-2">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-green-50 hover:bg-green-100 text-green-700 border-green-200"
+                      onClick={() => handleApproveFeedback(item.id)}
+                    >
+                      Approve
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      className="bg-red-50 hover:bg-red-100 text-red-700 border-red-200"
+                      onClick={() => handleRejectFeedback(item.id)}
+                    >
+                      Reject
+                    </Button>
+                  </div>
+                )}
+              </div>
             ))
           ) : (
             <div className="glass p-6 rounded-lg border text-muted-foreground">No feedback yet — be the first to comment.</div>

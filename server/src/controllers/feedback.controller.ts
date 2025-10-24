@@ -1,8 +1,9 @@
-import type { Request, Response } from 'express';
-import { sendSuccess, sendError } from '../utils/response.js';
-import prisma from '../prisma/client.js';
-import logger from '../utils/logger.js';
-import { transformFeedback } from '../utils/transformers.js';
+import type { Request, Response } from "express";
+import { sendSuccess, sendError } from "../utils/response.js";
+import prisma from "../prisma/client.js";
+import logger from "../utils/logger.js";
+import { transformFeedback } from "../utils/transformers.js";
+import { createNotification } from "./notification.controller.js";
 
 /**
  * Create feedback for a project
@@ -11,7 +12,7 @@ import { transformFeedback } from '../utils/transformers.js';
 export async function createFeedback(req: Request, res: Response) {
   try {
     if (!req.user) {
-      return sendError(res, 'Unauthorized', 'UNAUTHORIZED', null, 401);
+      return sendError(res, "Unauthorized", "UNAUTHORIZED", null, 401);
     }
 
     const { projectId } = req.params;
@@ -23,12 +24,18 @@ export async function createFeedback(req: Request, res: Response) {
     });
 
     if (!project) {
-      return sendError(res, 'Project not found', 'NOT_FOUND', null, 404);
+      return sendError(res, "Project not found", "NOT_FOUND", null, 404);
     }
 
     // Cannot review own project
     if (project.builderId === req.user.id) {
-      return sendError(res, 'Cannot review your own project', 'FORBIDDEN', null, 403);
+      return sendError(
+        res,
+        "Cannot review your own project",
+        "FORBIDDEN",
+        null,
+        403
+      );
     }
 
     // Check if user already gave feedback
@@ -42,7 +49,13 @@ export async function createFeedback(req: Request, res: Response) {
     });
 
     if (existingFeedback) {
-      return sendError(res, 'You already provided feedback for this project', 'ALREADY_EXISTS', null, 409);
+      return sendError(
+        res,
+        "You already provided feedback for this project",
+        "ALREADY_EXISTS",
+        null,
+        409
+      );
     }
 
     // Create feedback
@@ -51,7 +64,7 @@ export async function createFeedback(req: Request, res: Response) {
         projectId,
         reviewerId: req.user.id,
         content,
-        status: 'PENDING',
+        status: "PENDING",
       },
       include: {
         reviewer: {
@@ -65,14 +78,44 @@ export async function createFeedback(req: Request, res: Response) {
       },
     });
 
-    logger.info(`Feedback created: ${feedback.id} for project ${projectId} by user ${req.user.id}`);
+    logger.info(
+      `Feedback created: ${feedback.id} for project ${projectId} by user ${req.user.id}`
+    );
+
+    // Create notification for project owner
+    try {
+      await createNotification(project.builderId, "feedback", {
+        title: "New Feedback on Your Project",
+        message: `${feedback.reviewer.username} left feedback on "${
+          project.title
+        }": ${content.overall.substring(0, 100)}...`,
+        projectId: projectId,
+        feedbackId: feedback.id,
+      });
+    } catch (notificationError) {
+      logger.error(
+        "Failed to create notification for feedback:",
+        notificationError
+      );
+      // Don't fail the request if notification creation fails
+    }
 
     const formattedFeedback = transformFeedback(feedback as any);
 
-    return sendSuccess(res, { feedback: formattedFeedback }, 'Feedback submitted successfully!');
+    return sendSuccess(
+      res,
+      { feedback: formattedFeedback },
+      "Feedback submitted successfully!"
+    );
   } catch (error: any) {
-    logger.error('Create feedback error:', error);
-    return sendError(res, 'Failed to submit feedback', 'CREATE_FAILED', error.message, 500);
+    logger.error("Create feedback error:", error);
+    return sendError(
+      res,
+      "Failed to submit feedback",
+      "CREATE_FAILED",
+      error.message,
+      500
+    );
   }
 }
 
@@ -96,15 +139,21 @@ export async function getProjectFeedback(req: Request, res: Response) {
           },
         },
       },
-      orderBy: { createdAt: 'desc' },
+      orderBy: { createdAt: "desc" },
     });
 
     const transformed = feedback.map((item) => transformFeedback(item as any));
 
     return sendSuccess(res, { feedback: transformed });
   } catch (error: any) {
-    logger.error('Get feedback error:', error);
-    return sendError(res, 'Failed to get feedback', 'GET_FAILED', error.message, 500);
+    logger.error("Get feedback error:", error);
+    return sendError(
+      res,
+      "Failed to get feedback",
+      "GET_FAILED",
+      error.message,
+      500
+    );
   }
 }
 
@@ -115,7 +164,7 @@ export async function getProjectFeedback(req: Request, res: Response) {
 export async function updateFeedback(req: Request, res: Response) {
   try {
     if (!req.user) {
-      return sendError(res, 'Unauthorized', 'UNAUTHORIZED', null, 401);
+      return sendError(res, "Unauthorized", "UNAUTHORIZED", null, 401);
     }
 
     const { id } = req.params;
@@ -126,17 +175,29 @@ export async function updateFeedback(req: Request, res: Response) {
     });
 
     if (!feedback) {
-      return sendError(res, 'Feedback not found', 'NOT_FOUND', null, 404);
+      return sendError(res, "Feedback not found", "NOT_FOUND", null, 404);
     }
 
     // Check if user is the reviewer
     if (feedback.reviewerId !== req.user.id) {
-      return sendError(res, 'Forbidden - You can only update your own feedback', 'FORBIDDEN', null, 403);
+      return sendError(
+        res,
+        "Forbidden - You can only update your own feedback",
+        "FORBIDDEN",
+        null,
+        403
+      );
     }
 
     // Check if feedback is still pending
-    if (feedback.status !== 'PENDING') {
-      return sendError(res, 'Cannot update approved or rejected feedback', 'INVALID_STATUS', null, 400);
+    if (feedback.status !== "PENDING") {
+      return sendError(
+        res,
+        "Cannot update approved or rejected feedback",
+        "INVALID_STATUS",
+        null,
+        400
+      );
     }
 
     // Check if within 30 minutes
@@ -145,7 +206,13 @@ export async function updateFeedback(req: Request, res: Response) {
     const diffMinutes = (now.getTime() - createdAt.getTime()) / (1000 * 60);
 
     if (diffMinutes > 30) {
-      return sendError(res, 'Cannot update feedback after 30 minutes', 'TIME_EXPIRED', null, 400);
+      return sendError(
+        res,
+        "Cannot update feedback after 30 minutes",
+        "TIME_EXPIRED",
+        null,
+        400
+      );
     }
 
     const updatedFeedback = await prisma.feedback.update({
@@ -166,10 +233,20 @@ export async function updateFeedback(req: Request, res: Response) {
 
     const formatted = transformFeedback(updatedFeedback as any);
 
-    return sendSuccess(res, { feedback: formatted }, 'Feedback updated successfully!');
+    return sendSuccess(
+      res,
+      { feedback: formatted },
+      "Feedback updated successfully!"
+    );
   } catch (error: any) {
-    logger.error('Update feedback error:', error);
-    return sendError(res, 'Failed to update feedback', 'UPDATE_FAILED', error.message, 500);
+    logger.error("Update feedback error:", error);
+    return sendError(
+      res,
+      "Failed to update feedback",
+      "UPDATE_FAILED",
+      error.message,
+      500
+    );
   }
 }
 
@@ -180,7 +257,7 @@ export async function updateFeedback(req: Request, res: Response) {
 export async function deleteFeedback(req: Request, res: Response) {
   try {
     if (!req.user) {
-      return sendError(res, 'Unauthorized', 'UNAUTHORIZED', null, 401);
+      return sendError(res, "Unauthorized", "UNAUTHORIZED", null, 401);
     }
 
     const { id } = req.params;
@@ -190,15 +267,27 @@ export async function deleteFeedback(req: Request, res: Response) {
     });
 
     if (!feedback) {
-      return sendError(res, 'Feedback not found', 'NOT_FOUND', null, 404);
+      return sendError(res, "Feedback not found", "NOT_FOUND", null, 404);
     }
 
     if (feedback.reviewerId !== req.user.id) {
-      return sendError(res, 'Forbidden - You can only delete your own feedback', 'FORBIDDEN', null, 403);
+      return sendError(
+        res,
+        "Forbidden - You can only delete your own feedback",
+        "FORBIDDEN",
+        null,
+        403
+      );
     }
 
-    if (feedback.status !== 'PENDING') {
-      return sendError(res, 'Cannot delete approved or rejected feedback', 'INVALID_STATUS', null, 400);
+    if (feedback.status !== "PENDING") {
+      return sendError(
+        res,
+        "Cannot delete approved or rejected feedback",
+        "INVALID_STATUS",
+        null,
+        400
+      );
     }
 
     await prisma.feedback.delete({
@@ -207,10 +296,16 @@ export async function deleteFeedback(req: Request, res: Response) {
 
     logger.info(`Feedback deleted: ${id} by user ${req.user.id}`);
 
-    return sendSuccess(res, {}, 'Feedback deleted successfully!');
+    return sendSuccess(res, {}, "Feedback deleted successfully!");
   } catch (error: any) {
-    logger.error('Delete feedback error:', error);
-    return sendError(res, 'Failed to delete feedback', 'DELETE_FAILED', error.message, 500);
+    logger.error("Delete feedback error:", error);
+    return sendError(
+      res,
+      "Failed to delete feedback",
+      "DELETE_FAILED",
+      error.message,
+      500
+    );
   }
 }
 
@@ -221,7 +316,7 @@ export async function deleteFeedback(req: Request, res: Response) {
 export async function approveFeedback(req: Request, res: Response) {
   try {
     if (!req.user) {
-      return sendError(res, 'Unauthorized', 'UNAUTHORIZED', null, 401);
+      return sendError(res, "Unauthorized", "UNAUTHORIZED", null, 401);
     }
 
     const { id } = req.params;
@@ -236,26 +331,46 @@ export async function approveFeedback(req: Request, res: Response) {
     });
 
     if (!feedback) {
-      return sendError(res, 'Feedback not found', 'NOT_FOUND', null, 404);
+      return sendError(res, "Feedback not found", "NOT_FOUND", null, 404);
     }
 
     // Check if user is the project builder
     if (feedback.project.builderId !== req.user.id) {
-      return sendError(res, 'Forbidden - Only project owner can approve feedback', 'FORBIDDEN', null, 403);
+      return sendError(
+        res,
+        "Forbidden - Only project owner can approve feedback",
+        "FORBIDDEN",
+        null,
+        403
+      );
     }
 
-    if (feedback.status !== 'PENDING') {
-      return sendError(res, 'Feedback already processed', 'ALREADY_PROCESSED', null, 400);
+    if (feedback.status !== "PENDING") {
+      return sendError(
+        res,
+        "Feedback already processed",
+        "ALREADY_PROCESSED",
+        null,
+        400
+      );
     }
 
     const reward = parseFloat(rewardAmount);
     // Convert Prisma Decimal to number for arithmetic operations
     const bountyAmount = parseFloat(feedback.project.bountyAmount.toString());
-    const bountyDistributed = parseFloat(feedback.project.bountyDistributed.toString());
+    const bountyDistributed = parseFloat(
+      feedback.project.bountyDistributed.toString()
+    );
     const remaining = bountyAmount - bountyDistributed;
 
     if (reward > remaining) {
-      return sendError(res, 'Reward exceeds remaining bounty', 'INSUFFICIENT_BOUNTY', null, 400);
+      return sendError(
+        res,
+        "Reward exceeds remaining bounty",
+        "INSUFFICIENT_BOUNTY",
+        null,
+        400
+      );
     }
 
     // Update feedback and project in a transaction
@@ -264,7 +379,7 @@ export async function approveFeedback(req: Request, res: Response) {
       await tx.feedback.update({
         where: { id },
         data: {
-          status: 'APPROVED',
+          status: "APPROVED",
           rewardAmount: reward,
           qualityScore: qualityScore || null,
         },
@@ -299,12 +414,12 @@ export async function approveFeedback(req: Request, res: Response) {
       // Create transaction record
       await tx.transaction.create({
         data: {
-          type: 'REWARD',
+          type: "REWARD",
           fromUserId: feedback.project.builderId,
           toUserId: feedback.reviewerId,
           projectId: feedback.projectId,
           amount: reward,
-          status: 'COMPLETED',
+          status: "COMPLETED",
           metadata: {
             feedbackId: id,
             qualityScore: qualityScore || 0,
@@ -315,10 +430,16 @@ export async function approveFeedback(req: Request, res: Response) {
 
     logger.info(`Feedback approved: ${id}, reward: ${reward}`);
 
-    return sendSuccess(res, {}, 'Feedback approved and reward distributed!');
+    return sendSuccess(res, {}, "Feedback approved and reward distributed!");
   } catch (error: any) {
-    logger.error('Approve feedback error:', error);
-    return sendError(res, 'Failed to approve feedback', 'APPROVE_FAILED', error.message, 500);
+    logger.error("Approve feedback error:", error);
+    return sendError(
+      res,
+      "Failed to approve feedback",
+      "APPROVE_FAILED",
+      error.message,
+      500
+    );
   }
 }
 
@@ -329,7 +450,7 @@ export async function approveFeedback(req: Request, res: Response) {
 export async function rejectFeedback(req: Request, res: Response) {
   try {
     if (!req.user) {
-      return sendError(res, 'Unauthorized', 'UNAUTHORIZED', null, 401);
+      return sendError(res, "Unauthorized", "UNAUTHORIZED", null, 401);
     }
 
     const { id } = req.params;
@@ -343,29 +464,47 @@ export async function rejectFeedback(req: Request, res: Response) {
     });
 
     if (!feedback) {
-      return sendError(res, 'Feedback not found', 'NOT_FOUND', null, 404);
+      return sendError(res, "Feedback not found", "NOT_FOUND", null, 404);
     }
 
     if (feedback.project.builderId !== req.user.id) {
-      return sendError(res, 'Forbidden - Only project owner can reject feedback', 'FORBIDDEN', null, 403);
+      return sendError(
+        res,
+        "Forbidden - Only project owner can reject feedback",
+        "FORBIDDEN",
+        null,
+        403
+      );
     }
 
-    if (feedback.status !== 'PENDING') {
-      return sendError(res, 'Feedback already processed', 'ALREADY_PROCESSED', null, 400);
+    if (feedback.status !== "PENDING") {
+      return sendError(
+        res,
+        "Feedback already processed",
+        "ALREADY_PROCESSED",
+        null,
+        400
+      );
     }
 
     await prisma.feedback.update({
       where: { id },
       data: {
-        status: 'REJECTED',
+        status: "REJECTED",
       },
     });
 
-    logger.info(`Feedback rejected: ${id}, reason: ${reason || 'none'}`);
+    logger.info(`Feedback rejected: ${id}, reason: ${reason || "none"}`);
 
-    return sendSuccess(res, {}, 'Feedback rejected');
+    return sendSuccess(res, {}, "Feedback rejected");
   } catch (error: any) {
-    logger.error('Reject feedback error:', error);
-    return sendError(res, 'Failed to reject feedback', 'REJECT_FAILED', error.message, 500);
+    logger.error("Reject feedback error:", error);
+    return sendError(
+      res,
+      "Failed to reject feedback",
+      "REJECT_FAILED",
+      error.message,
+      500
+    );
   }
 }

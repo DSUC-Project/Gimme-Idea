@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input"
 import { PasswordInput } from "@/components/ui/password-input"
 import { Bell, Lock, User, Trash2 } from "lucide-react"
 import { useAuth } from "@/contexts/auth-context"
+import { settingsApi } from "@/lib/api/settings"
 
 export default function SettingsPage() {
   const { user } = useAuth()
@@ -33,11 +34,17 @@ export default function SettingsPage() {
 
   const handleSaveAccount = async () => {
     setIsSaving(true)
-    // TODO: Implement API call
-    setTimeout(() => {
-      setIsSaving(false)
+    try {
+      await settingsApi.updateProfile({
+        username: accountData.username,
+      })
       alert("Account settings saved!")
-    }, 1000)
+    } catch (err: any) {
+      console.error("[settings] save account failed:", err)
+      alert(err?.message || "Failed to save account settings")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleChangePassword = async () => {
@@ -46,21 +53,32 @@ export default function SettingsPage() {
       return
     }
     setIsSaving(true)
-    // TODO: Implement API call
-    setTimeout(() => {
-      setIsSaving(false)
+    try {
+      await settingsApi.changePassword({
+        currentPassword: passwordData.currentPassword,
+        newPassword: passwordData.newPassword,
+      })
       setPasswordData({ currentPassword: "", newPassword: "", confirmPassword: "" })
       alert("Password changed successfully!")
-    }, 1000)
+    } catch (err: any) {
+      console.error("[settings] change password failed:", err)
+      alert(err?.message || "Failed to change password")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const handleSaveNotifications = async () => {
     setIsSaving(true)
-    // TODO: Implement API call
-    setTimeout(() => {
-      setIsSaving(false)
+    try {
+      await settingsApi.updateNotifications(notificationSettings)
       alert("Notification settings saved!")
-    }, 1000)
+    } catch (err: any) {
+      console.error("[settings] save notifications failed:", err)
+      alert(err?.message || "Failed to save notification settings")
+    } finally {
+      setIsSaving(false)
+    }
   }
 
   const tabs = [
@@ -248,9 +266,19 @@ export default function SettingsPage() {
                     </div>
                     <Button
                       variant="destructive"
-                      onClick={() => {
-                        if (confirm("Are you absolutely sure you want to delete your account?")) {
-                          alert("Account deletion is not implemented yet. Contact support for assistance.")
+                      onClick={async () => {
+                        const password = prompt("Enter your password to confirm account deletion:")
+                        if (!password) return
+                        
+                        if (confirm("Are you absolutely sure you want to delete your account? This action cannot be undone.")) {
+                          try {
+                            await settingsApi.deleteAccount(password)
+                            alert("Account deleted successfully. You will be redirected to login.")
+                            window.location.href = "/login"
+                          } catch (err: any) {
+                            console.error("[settings] delete account failed:", err)
+                            alert(err?.message || "Failed to delete account")
+                          }
                         }
                       }}
                     >

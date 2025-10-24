@@ -1,59 +1,55 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { LayoutWrapper } from "@/components/layout-wrapper"
 import { NotificationItem } from "@/components/notification-item"
 import { Button } from "@/components/ui/button"
-import { useState } from "react"
+import { notificationsApi } from "@/lib/api/notifications"
+import type { Notification } from "@/lib/api/notifications"
 
 export default function NotificationsPage() {
-  const [notifications, setNotifications] = useState([
-    {
-      id: "1",
-      type: "feedback" as const,
-      title: "New Feedback on Your Project",
-      message: "Mike Johnson left feedback on 'AI-Powered Email Assistant': Great idea! The UI is intuitive...",
-      timestamp: "2 hours ago",
-      read: false,
-    },
-    {
-      id: "2",
-      type: "mention" as const,
-      title: "You Were Mentioned",
-      message: "Sarah Chen mentioned you in a comment: @You should check out this new feature...",
-      timestamp: "4 hours ago",
-      read: false,
-    },
-    {
-      id: "3",
-      type: "bookmark" as const,
-      title: "Project Bookmarked",
-      message: "Someone bookmarked your project 'Design System UI Kit'",
-      timestamp: "1 day ago",
-      read: true,
-    },
-    {
-      id: "4",
-      type: "system" as const,
-      title: "Earnings Update",
-      message: "You earned $45.50 from feedback contributions this week",
-      timestamp: "2 days ago",
-      read: true,
-    },
-    {
-      id: "5",
-      type: "feedback" as const,
-      title: "New Feedback on Your Project",
-      message: "Emma Wilson left feedback on 'Fitness Tracking App': The tone adjustment feature is excellent...",
-      timestamp: "3 days ago",
-      read: true,
-    },
-  ])
+  const [notifications, setNotifications] = useState<Notification[]>([])
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
+  const [unreadCount, setUnreadCount] = useState(0)
 
-  const dismissNotification = (id: string) => {
-    setNotifications(notifications.filter((n) => n.id !== id))
+  useEffect(() => {
+    void loadNotifications()
+    async function loadNotifications() {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const response = await notificationsApi.list()
+        setNotifications(response.notifications)
+        setUnreadCount(response.unreadCount)
+      } catch (err: any) {
+        console.error("[notifications] failed to load:", err)
+        setError(err?.message || "Unable to load notifications.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+  }, [])
+
+  const dismissNotification = async (id: string) => {
+    try {
+      await notificationsApi.delete(id)
+      setNotifications(prev => prev.filter(n => n.id !== id))
+      setUnreadCount(prev => Math.max(0, prev - 1))
+    } catch (err) {
+      console.error("[notifications] delete failed:", err)
+    }
   }
 
-  const unreadCount = notifications.filter((n) => !n.read).length
+  const markAllAsRead = async () => {
+    try {
+      await notificationsApi.markAllAsRead()
+      setNotifications(prev => prev.map(n => ({ ...n, read: true })))
+      setUnreadCount(0)
+    } catch (err) {
+      console.error("[notifications] mark all as read failed:", err)
+    }
+  }
 
   return (
     <LayoutWrapper>
@@ -69,17 +65,37 @@ export default function NotificationsPage() {
             )}
           </div>
           {unreadCount > 0 && (
-            <Button variant="outline" className="bg-transparent">
+            <Button variant="outline" className="bg-transparent" onClick={markAllAsRead}>
               Mark all as read
             </Button>
           )}
         </div>
 
-        {/* Notifications List */}
-        {notifications.length > 0 ? (
+        {error ? (
+          <div className="glass p-6 rounded-lg border border-destructive/40 bg-destructive/10 text-destructive">
+            {error}
+          </div>
+        ) : null}
+
+        {isLoading ? (
+          <div className="space-y-3">
+            {Array.from({ length: 3 }).map((_, index) => (
+              <div key={index} className="glass p-4 rounded-lg border animate-pulse h-20" />
+            ))}
+          </div>
+        ) : notifications.length > 0 ? (
           <div className="space-y-3">
             {notifications.map((notification) => (
-              <NotificationItem key={notification.id} {...notification} onDismiss={dismissNotification} />
+              <NotificationItem 
+                key={notification.id} 
+                id={notification.id}
+                type={notification.type}
+                title={notification.payload?.title || "Notification"}
+                message={notification.payload?.message || ""}
+                timestamp={new Date(notification.createdAt).toLocaleString()}
+                read={notification.read}
+                onDismiss={dismissNotification} 
+              />
             ))}
           </div>
         ) : (
