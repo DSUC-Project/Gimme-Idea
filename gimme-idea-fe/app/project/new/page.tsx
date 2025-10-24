@@ -32,13 +32,18 @@ export default function NewProjectPage() {
     setIsSubmitting(true)
     setError(null)
     try {
+      // Default deadline: 30 days from now
+      const defaultDeadline = new Date()
+      defaultDeadline.setDate(defaultDeadline.getDate() + 30)
+
       const response = await projectsApi.create({
         title: formData.title,
         description: formData.description,
-        demoUrl: formData.projectLink || undefined,
+        demoUrl: formData.projectLink || "https://example.com", // Default URL if empty
         category: formData.category,
         tags: [],
         bountyAmount: formData.bountyAmount ? Number(formData.bountyAmount) : 0,
+        deadline: defaultDeadline.toISOString(),
       })
       router.push(`/project/${response.project.id}`)
     } catch (err: any) {
