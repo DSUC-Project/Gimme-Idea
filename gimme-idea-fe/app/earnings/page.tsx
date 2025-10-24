@@ -1,29 +1,35 @@
 "use client"
 
+import { useEffect, useState } from "react"
 import { LayoutWrapper } from "@/components/layout-wrapper"
 import { Button } from "@/components/ui/button"
 import { TrendingUp, DollarSign, Award, Wallet } from "lucide-react"
-import { useState } from "react"
+import { earningsApi } from "@/lib/api/earnings"
+import type { EarningsResponse } from "@/lib/api/earnings"
 
 export default function EarningsPage() {
   const [selectedWallet, setSelectedWallet] = useState<string | null>(null)
   const [showWithdraw, setShowWithdraw] = useState(false)
+  const [earningsData, setEarningsData] = useState<EarningsResponse | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
+  const [error, setError] = useState<string | null>(null)
 
-  const earnings = [
-    { month: "January", amount: 245.5, feedback: 28 },
-    { month: "February", amount: 312.75, feedback: 35 },
-    { month: "March", amount: 189.25, feedback: 22 },
-    { month: "April", amount: 456.0, feedback: 52 },
-  ]
-
-  const totalEarnings = earnings.reduce((sum, e) => sum + e.amount, 0)
-  const totalFeedback = earnings.reduce((sum, e) => sum + e.feedback, 0)
-
-  const topContributions = [
-    { title: "AI-Powered Email Assistant", earnings: 156.5, feedback: 18 },
-    { title: "Design System UI Kit", earnings: 234.75, feedback: 28 },
-    { title: "Fitness Tracking App", earnings: 89.25, feedback: 12 },
-  ]
+  useEffect(() => {
+    void loadEarnings()
+    async function loadEarnings() {
+      setIsLoading(true)
+      setError(null)
+      try {
+        const response = await earningsApi.getEarnings()
+        setEarningsData(response)
+      } catch (err: any) {
+        console.error("[earnings] failed to load:", err)
+        setError(err?.message || "Unable to load earnings data.")
+      } finally {
+        setIsLoading(false)
+      }
+    }
+  }, [])
 
   const walletOptions = [
     { name: "Phantom", icon: "🪽" },
@@ -32,6 +38,40 @@ export default function EarningsPage() {
     { name: "Coinbase Wallet", icon: "💙" },
     { name: "Trust Wallet", icon: "🛡️" },
   ]
+
+  if (isLoading) {
+    return (
+      <LayoutWrapper>
+        <div className="p-4 md:p-6 max-w-4xl mx-auto space-y-6 md:space-y-8">
+          <div className="glass p-8 rounded-xl border animate-pulse h-64" />
+        </div>
+      </LayoutWrapper>
+    )
+  }
+
+  if (error) {
+    return (
+      <LayoutWrapper>
+        <div className="p-4 md:p-6 max-w-4xl mx-auto">
+          <div className="glass p-8 rounded-xl border border-destructive/40 bg-destructive/10 text-destructive">
+            {error}
+          </div>
+        </div>
+      </LayoutWrapper>
+    )
+  }
+
+  if (!earningsData) {
+    return (
+      <LayoutWrapper>
+        <div className="p-4 md:p-6 max-w-4xl mx-auto">
+          <div className="glass p-8 rounded-xl border text-center text-muted-foreground">
+            No earnings data available
+          </div>
+        </div>
+      </LayoutWrapper>
+    )
+  }
 
   return (
     <LayoutWrapper>
@@ -49,14 +89,14 @@ export default function EarningsPage() {
               <p className="text-xs md:text-sm text-muted-foreground">Total Earnings</p>
               <DollarSign className="w-4 h-4 md:w-5 md:h-5 text-primary" />
             </div>
-            <p className="text-2xl md:text-3xl font-bold text-foreground">${totalEarnings.toFixed(2)}</p>
+            <p className="text-2xl md:text-3xl font-bold text-foreground">${earningsData.summary.totalEarnings.toFixed(2)}</p>
           </div>
           <div className="glass p-4 md:p-6 rounded-lg border">
             <div className="flex items-center justify-between mb-2">
               <p className="text-xs md:text-sm text-muted-foreground">Feedback Items</p>
               <Award className="w-4 h-4 md:w-5 md:h-5 text-accent" />
             </div>
-            <p className="text-2xl md:text-3xl font-bold text-foreground">{totalFeedback}</p>
+            <p className="text-2xl md:text-3xl font-bold text-foreground">{earningsData.summary.feedbackCount}</p>
           </div>
           <div className="glass p-4 md:p-6 rounded-lg border">
             <div className="flex items-center justify-between mb-2">
@@ -64,7 +104,7 @@ export default function EarningsPage() {
               <TrendingUp className="w-4 h-4 md:w-5 md:h-5 text-secondary" />
             </div>
             <p className="text-2xl md:text-3xl font-bold text-foreground">
-              ${(totalEarnings / totalFeedback).toFixed(2)}
+              ${earningsData.summary.averagePerFeedback.toFixed(2)}
             </p>
           </div>
         </div>
@@ -73,15 +113,23 @@ export default function EarningsPage() {
         <div className="glass p-4 md:p-6 rounded-lg border">
           <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 md:mb-6">Monthly Breakdown</h2>
           <div className="space-y-3 md:space-y-4">
-            {earnings.map((month, i) => (
-              <div key={i} className="flex items-center justify-between pb-3 md:pb-4 border-b last:border-b-0">
-                <div>
-                  <p className="font-semibold text-foreground text-sm md:text-base">{month.month}</p>
-                  <p className="text-xs md:text-sm text-muted-foreground">{month.feedback} feedback items</p>
+            {earningsData.monthlyBreakdown.length > 0 ? (
+              earningsData.monthlyBreakdown.map((month, i) => (
+                <div key={i} className="flex items-center justify-between pb-3 md:pb-4 border-b last:border-b-0">
+                  <div>
+                    <p className="font-semibold text-foreground text-sm md:text-base">
+                      {new Date(month.month).toLocaleDateString('en-US', { month: 'long', year: 'numeric' })}
+                    </p>
+                    <p className="text-xs md:text-sm text-muted-foreground">{month.feedback_count} feedback items</p>
+                  </div>
+                  <p className="text-base md:text-lg font-bold text-primary">${Number(month.earnings).toFixed(2)}</p>
                 </div>
-                <p className="text-base md:text-lg font-bold text-primary">${month.amount.toFixed(2)}</p>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground py-4">
+                No monthly data available yet
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -89,15 +137,21 @@ export default function EarningsPage() {
         <div className="glass p-4 md:p-6 rounded-lg border">
           <h2 className="text-lg md:text-xl font-bold text-foreground mb-4 md:mb-6">Top Contributions</h2>
           <div className="space-y-3 md:space-y-4">
-            {topContributions.map((contrib, i) => (
-              <div key={i} className="flex items-center justify-between pb-3 md:pb-4 border-b last:border-b-0">
-                <div>
-                  <p className="font-semibold text-foreground text-sm md:text-base">{contrib.title}</p>
-                  <p className="text-xs md:text-sm text-muted-foreground">{contrib.feedback} feedback items</p>
+            {earningsData.topProjects.length > 0 ? (
+              earningsData.topProjects.map((project, i) => (
+                <div key={i} className="flex items-center justify-between pb-3 md:pb-4 border-b last:border-b-0">
+                  <div>
+                    <p className="font-semibold text-foreground text-sm md:text-base">{project.title}</p>
+                    <p className="text-xs md:text-sm text-muted-foreground">{project.feedback_count} feedback items</p>
+                  </div>
+                  <p className="text-base md:text-lg font-bold text-primary">${Number(project.total_earnings).toFixed(2)}</p>
                 </div>
-                <p className="text-base md:text-lg font-bold text-primary">${contrib.earnings.toFixed(2)}</p>
+              ))
+            ) : (
+              <div className="text-center text-muted-foreground py-4">
+                No project contributions yet
               </div>
-            ))}
+            )}
           </div>
         </div>
 
@@ -107,7 +161,7 @@ export default function EarningsPage() {
           <div className="flex items-center justify-between mb-6">
             <div>
               <p className="text-muted-foreground text-xs md:text-sm mb-1">Available Balance</p>
-              <p className="text-2xl md:text-3xl font-bold text-foreground">${totalEarnings.toFixed(2)}</p>
+              <p className="text-2xl md:text-3xl font-bold text-foreground">${earningsData.summary.currentBalance.toFixed(2)}</p>
             </div>
             <Button
               className="bg-primary hover:bg-primary/90 text-sm md:text-base"
@@ -161,7 +215,7 @@ export default function EarningsPage() {
                       <input
                         type="number"
                         placeholder="0.00"
-                        max={totalEarnings}
+                        max={earningsData.summary.currentBalance}
                         className="flex-1 px-3 py-2 rounded-lg bg-background border border-border text-sm"
                       />
                       <Button className="bg-primary hover:bg-primary/90 text-sm">Withdraw</Button>
