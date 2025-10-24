@@ -36,13 +36,18 @@ export default function NewProjectPage() {
       const defaultDeadline = new Date()
       defaultDeadline.setDate(defaultDeadline.getDate() + 30)
 
+      // Combine short description and details
+      const fullDescription = formData.details
+        ? `${formData.description}\n\n${formData.details}`
+        : formData.description
+
       const response = await projectsApi.create({
-        title: formData.title,
-        description: formData.description,
-        demoUrl: formData.projectLink || "https://example.com", // Default URL if empty
+        title: formData.title.trim(),
+        description: fullDescription,
+        demoUrl: formData.projectLink.trim() || "https://example.com",
         category: formData.category,
         tags: [],
-        bountyAmount: formData.bountyAmount ? Number(formData.bountyAmount) : 0,
+        bountyAmount: formData.bountyAmount ? parseFloat(formData.bountyAmount) : 0,
         deadline: defaultDeadline.toISOString(),
       })
       router.push(`/project/${response.project.id}`)
