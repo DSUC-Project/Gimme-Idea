@@ -1,0 +1,172 @@
+/**
+ * Base API Client for GMI-BE
+ * Handles authentication headers and error handling
+ */
+
+const API_URL = process.env.NEXT_PUBLIC_API_URL || 'http://localhost:3001'
+const ACCESS_CODE = process.env.NEXT_PUBLIC_ACCESS_CODE || 'GMI2025'
+
+export interface ApiRequestOptions {
+  method?: 'GET' | 'POST' | 'PUT' | 'DELETE'
+  body?: any
+  headers?: Record<string, string>
+  requireAuth?: boolean
+  walletAddress?: string
+  walletSignature?: string
+}
+
+export interface ApiResponse<T = any> {
+  data?: T
+  error?: string
+  success?: boolean
+}
+
+/**
+ * Base API request function with authentication
+ */
+export async function apiRequest<T = any>(
+  endpoint: string,
+  options: ApiRequestOptions = {}
+): Promise<ApiResponse<T>> {
+  const {
+    method = 'GET',
+    body,
+    headers = {},
+    requireAuth = false,
+    walletAddress,
+    walletSignature
+  } = options
+
+  // Build headers
+  const requestHeaders: Record<string, string> = {
+    'Content-Type': 'application/json',
+    'x-access-code': ACCESS_CODE,
+    ...headers
+  }
+
+  // Add wallet authentication headers if provided
+  if (walletAddress) {
+    requestHeaders['x-wallet-address'] = walletAddress
+  }
+
+  if (walletSignature) {
+    requestHeaders['x-wallet-signature'] = walletSignature
+  }
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method,
+      headers: requestHeaders,
+      body: body ? JSON.stringify(body) : undefined,
+      credentials: 'include' // Include cookies
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return {
+        error: data.error || `Request failed with status ${response.status}`,
+        success: false
+      }
+    }
+
+    return {
+      data,
+      success: true
+    }
+  } catch (error) {
+    console.error('[API Client] Error:', error)
+    return {
+      error: error instanceof Error ? error.message : 'Network error',
+      success: false
+    }
+  }
+}
+
+/**
+ * GET request
+ */
+export async function apiGet<T = any>(
+  endpoint: string,
+  options: Omit<ApiRequestOptions, 'method' | 'body'> = {}
+): Promise<ApiResponse<T>> {
+  return apiRequest<T>(endpoint, { ...options, method: 'GET' })
+}
+
+/**
+ * POST request
+ */
+export async function apiPost<T = any>(
+  endpoint: string,
+  body?: any,
+  options: Omit<ApiRequestOptions, 'method' | 'body'> = {}
+): Promise<ApiResponse<T>> {
+  return apiRequest<T>(endpoint, { ...options, method: 'POST', body })
+}
+
+/**
+ * PUT request
+ */
+export async function apiPut<T = any>(
+  endpoint: string,
+  body?: any,
+  options: Omit<ApiRequestOptions, 'method' | 'body'> = {}
+): Promise<ApiResponse<T>> {
+  return apiRequest<T>(endpoint, { ...options, method: 'PUT', body })
+}
+
+/**
+ * DELETE request
+ */
+export async function apiDelete<T = any>(
+  endpoint: string,
+  options: Omit<ApiRequestOptions, 'method' | 'body'> = {}
+): Promise<ApiResponse<T>> {
+  return apiRequest<T>(endpoint, { ...options, method: 'DELETE' })
+}
+
+/**
+ * Upload file (multipart/form-data)
+ */
+export async function apiUpload<T = any>(
+  endpoint: string,
+  file: File,
+  walletAddress: string,
+  walletSignature: string
+): Promise<ApiResponse<T>> {
+  const formData = new FormData()
+  formData.append('image', file)
+
+  try {
+    const response = await fetch(`${API_URL}${endpoint}`, {
+      method: 'POST',
+      headers: {
+        'x-access-code': ACCESS_CODE,
+        'x-wallet-address': walletAddress,
+        'x-wallet-signature': walletSignature
+      },
+      body: formData,
+      credentials: 'include'
+    })
+
+    const data = await response.json()
+
+    if (!response.ok) {
+      return {
+        error: data.error || 'Upload failed',
+        success: false
+      }
+    }
+
+    return {
+      data,
+      success: true
+    }
+  } catch (error) {
+    console.error('[API Upload] Error:', error)
+    return {
+      error: error instanceof Error ? error.message : 'Upload error',
+      success: false
+    }
+  }
+}
