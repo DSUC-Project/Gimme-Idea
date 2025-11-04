@@ -70,7 +70,7 @@ export default function Dashboard() {
           throw new Error(response.error || 'Failed to fetch posts')
         }
 
-        setPosts(response.data.posts)
+        setPosts(response.data.posts || [])
       } catch (err) {
         setError(err instanceof Error ? err.message : "Failed to fetch posts")
         console.error("[Dashboard] Error fetching posts:", err)
