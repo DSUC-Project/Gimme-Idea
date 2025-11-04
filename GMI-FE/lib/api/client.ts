@@ -61,7 +61,18 @@ export async function apiRequest<T = any>(
       credentials: 'include' // Include cookies
     })
 
-    const data = await response.json()
+    // Check if response has content before parsing JSON
+    const text = await response.text()
+    let data
+    try {
+      data = text ? JSON.parse(text) : {}
+    } catch (parseError) {
+      console.error('[API Client] JSON parse error:', text)
+      return {
+        error: 'Invalid response from server',
+        success: false
+      }
+    }
 
     if (!response.ok) {
       return {
