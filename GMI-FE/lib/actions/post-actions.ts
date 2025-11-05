@@ -73,7 +73,8 @@ export async function createPost(
     throw new Error(response.error || 'Failed to create post')
   }
 
-  return response.data
+  // Backend returns { post: {...} }, extract the post object
+  return response.data.post || response.data
 }
 
 /**

@@ -170,6 +170,7 @@ export default function CreatePost() {
 
       console.log("[v0] Post created successfully:", newPost.id)
 
+      // Store will auto-transform backend camelCase to snake_case
       addPost(newPost)
       setLoading(false)
       router.push("/dashboard")
