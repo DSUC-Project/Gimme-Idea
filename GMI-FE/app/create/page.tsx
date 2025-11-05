@@ -141,20 +141,32 @@ export default function CreatePost() {
         imageUrl = await uploadPostImage(imageFile, appWallet.address || '', cached.signature, cached.message)
       }
 
-      // Create the post first
-      const newPost = await createPost({
-        wallet_address: appWallet.address || "Unknown",
+      // Create the post first - match backend CreatePostInput type
+      const postInput: any = {
         title: formData.title,
         description: formData.description,
-        short_description: formData.description.substring(0, 100) + "...",
-        image_url: imageUrl,
-        project_link: formData.projectLink,
+        imageUrl: imageUrl,
+        projectLink: formData.projectLink,
         category: formData.category,
-        prize_pool_amount: withPrizes ? Number.parseFloat(prizePool.amount || "0") : 0,
-        prize_pool_count: withPrizes ? Number.parseInt(prizePool.winnerCount) : 0,
-        ends_at: withPrizes && prizePool.endsAt ? new Date(prizePool.endsAt).toISOString() : undefined,
-        escrow_locked: false, // Prize pool not locked yet - can be locked later if needed
-      }, appWallet.address || '', cached.signature, cached.message)
+      }
+
+      // Add prize pool if enabled
+      if (withPrizes && prizePool.amount) {
+        const winnerCount = Number.parseInt(prizePool.winnerCount)
+        const distribution = Array.from({ length: winnerCount }, (_, i) => ({
+          rank: i + 1,
+          amount: Number.parseFloat(prizePool.distribution[i + 1] || "0")
+        }))
+
+        postInput.prizePool = {
+          totalAmount: Number.parseFloat(prizePool.amount),
+          winnersCount: winnerCount,
+          distribution: distribution,
+          endsAt: prizePool.endsAt ? new Date(prizePool.endsAt).toISOString() : new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString() // Default 7 days
+        }
+      }
+
+      const newPost = await createPost(postInput, appWallet.address || '', cached.signature, cached.message)
 
       console.log("[v0] Post created successfully:", newPost.id)
 
