@@ -30,6 +30,25 @@ interface Post {
   created_at: string
 }
 
+// Transform backend camelCase response to app store snake_case format
+function transformBackendPost(backendPost: any): Post {
+  return {
+    id: backendPost.id,
+    wallet_address: backendPost.wallet?.address || backendPost.walletAddress || '',
+    title: backendPost.title,
+    description: backendPost.description,
+    short_description: backendPost.description?.substring(0, 100) + (backendPost.description?.length > 100 ? '...' : ''),
+    image_url: backendPost.imageUrl,
+    project_link: backendPost.projectLink,
+    category: backendPost.category,
+    prize_pool_amount: backendPost.prizePool?.totalAmount || 0,
+    prize_pool_count: backendPost.prizePool?.winnersCount || 0,
+    ends_at: backendPost.prizePool?.endsAt,
+    escrow_locked: !!backendPost.prizePool?.escrowTx,
+    created_at: backendPost.createdAt
+  }
+}
+
 interface AppState {
   // Access
   hasAccess: boolean
@@ -72,10 +91,10 @@ export const useAppStore = create<AppState>((set) => ({
 
   // Posts
   posts: [],
-  setPosts: (posts) => set({ posts }),
-  addPost: (post) => set((state) => ({ posts: [post, ...state.posts] })),
+  setPosts: (posts) => set({ posts: posts.map(transformBackendPost) }),
+  addPost: (post) => set((state) => ({ posts: [transformBackendPost(post), ...state.posts] })),
   currentPost: null,
-  setCurrentPost: (post) => set({ currentPost: post }),
+  setCurrentPost: (post) => set({ currentPost: post ? transformBackendPost(post) : null }),
 
   // UI
   loading: false,
