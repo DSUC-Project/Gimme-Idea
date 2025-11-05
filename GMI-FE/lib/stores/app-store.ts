@@ -31,7 +31,7 @@ interface Post {
 }
 
 // Transform backend camelCase response to app store snake_case format
-function transformBackendPost(backendPost: any): Post {
+export function transformBackendPost(backendPost: any): Post {
   return {
     id: backendPost.id,
     wallet_address: backendPost.wallet?.address || backendPost.walletAddress || '',

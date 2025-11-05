@@ -133,11 +133,11 @@ export default function Dashboard() {
                 key={post.id}
                 id={post.id}
                 title={post.title}
-                description={post.description}
-                imageUrl={post.imageUrl}
+                description={post.short_description || post.description}
+                imageUrl={post.image_url}
                 category={post.category}
-                prizePoolAmount={post.prizePool?.totalAmount}
-                commentsCount={post._count?.comments || 0}
+                prizePoolAmount={post.prize_pool_amount}
+                commentsCount={0}
               />
             ))
           )}
