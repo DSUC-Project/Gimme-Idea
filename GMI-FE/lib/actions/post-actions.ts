@@ -13,6 +13,7 @@ import {
   type UpdatePostInput,
   type Post
 } from '../api/posts.api'
+import { transformBackendPost } from '../stores/app-store'
 
 /**
  * Get all posts with optional filters
@@ -29,7 +30,11 @@ export async function getPosts(params?: {
     throw new Error(response.error || 'Failed to get posts')
   }
 
-  return response.data
+  // Transform posts but keep the rest of response structure
+  return {
+    ...response.data,
+    posts: response.data.posts.map(transformBackendPost)
+  }
 }
 
 /**
@@ -42,7 +47,8 @@ export async function getUserPosts(walletAddress: string) {
     throw new Error(response.error || 'Failed to get user posts')
   }
 
-  return response.data.posts
+  // Transform backend camelCase to snake_case
+  return response.data.posts.map(transformBackendPost)
 }
 
 /**

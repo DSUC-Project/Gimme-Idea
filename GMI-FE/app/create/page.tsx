@@ -40,6 +40,7 @@ export default function CreatePost() {
   const { wallet: appWallet, addPost } = useAppStore()
   const fileInputRef = useRef<HTMLInputElement>(null)
   const [loading, setLoading] = useState(false)
+  const [loadingMessage, setLoadingMessage] = useState("")
   const [imagePreview, setImagePreview] = useState<string | null>(null)
   const [imageFile, setImageFile] = useState<File | null>(null)
   const [formError, setFormError] = useState("")
@@ -118,6 +119,7 @@ export default function CreatePost() {
     setFormError("")
     setUploadError("")
     setLoading(true)
+    setLoadingMessage("Preparing...")
 
     try {
       // Validate form
@@ -125,6 +127,7 @@ export default function CreatePost() {
       if (error) {
         setFormError(error)
         setLoading(false)
+        setLoadingMessage("")
         return
       }
 
@@ -138,10 +141,12 @@ export default function CreatePost() {
 
       // Upload image to Supabase Storage
       if (imageFile) {
+        setLoadingMessage("Compressing and uploading image...")
         imageUrl = await uploadPostImage(imageFile, appWallet.address || '', cached.signature, cached.message)
       }
 
       // Create the post first - match backend CreatePostInput type
+      setLoadingMessage("Creating post...")
       const postInput: any = {
         title: formData.title,
         description: formData.description,
@@ -170,14 +175,17 @@ export default function CreatePost() {
 
       console.log("[v0] Post created successfully:", newPost.id)
 
+      setLoadingMessage("Success! Redirecting...")
       // Store will auto-transform backend camelCase to snake_case
       addPost(newPost)
       setLoading(false)
+      setLoadingMessage("")
       router.push("/dashboard")
     } catch (error) {
       const message = error instanceof Error ? error.message : "Failed to create post"
       setFormError(message)
       setLoading(false)
+      setLoadingMessage("")
     }
   }
 
@@ -379,20 +387,32 @@ export default function CreatePost() {
             )}
           </Card>
 
+          {/* Loading Message */}
+          {loadingMessage && (
+            <div className="text-center text-sm text-muted-foreground py-2">
+              {loadingMessage}
+            </div>
+          )}
+
           {/* Action Buttons */}
           <div className="flex gap-3 pt-4">
             <Button type="button" variant="outline" onClick={() => router.back()} disabled={loading}>
               Cancel
             </Button>
             <Button onClick={(e) => handleSubmit(e, false)} disabled={loading || !formData.title} isLoading={loading}>
-              Post without Prizes
+              {loading ? loadingMessage || "Processing..." : "Post without Prizes"}
             </Button>
             <Button
               onClick={(e) => handleSubmit(e, prizePool.enabled)}
               disabled={loading || (prizePool.enabled && !prizePool.amount)}
               isLoading={loading}
             >
-              {prizePool.enabled ? `Post with Prizes (${prizePool.amount} SOL)` : "Post Project"}
+              {loading
+                ? loadingMessage || "Processing..."
+                : prizePool.enabled
+                  ? `Post with Prizes (${prizePool.amount} SOL)`
+                  : "Post Project"
+              }
             </Button>
           </div>
         </form>

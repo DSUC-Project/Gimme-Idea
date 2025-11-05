@@ -80,10 +80,11 @@ export default function MyProjectsPage() {
                 key={post.id}
                 id={post.id}
                 title={post.title}
-                short_description={post.short_description}
-                image_url={post.image_url}
+                description={post.short_description || post.description}
+                imageUrl={post.image_url}
                 category={post.category}
-                prize_pool_amount={post.prize_pool_amount}
+                prizePoolAmount={post.prize_pool_amount}
+                commentsCount={0}
               />
             ))}
           </div>
