@@ -4,12 +4,16 @@ import React, { useEffect } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import { IdeaDetail } from '../../../components/IdeaDetail';
 import { useAppStore } from '../../../lib/store';
+import { extractIdFromSlug } from '../../../lib/slug-utils';
 
 export default function IdeaDetailPage() {
   const params = useParams();
   const router = useRouter();
   const { selectedProject, setSelectedProject, fetchProjectById, isLoading } = useAppStore();
-  const ideaId = params.id as string;
+  const slugOrId = params.id as string;
+  
+  // Extract ID from slug (ID is the last 8 chars after final hyphen)
+  const ideaId = extractIdFromSlug(slugOrId) || slugOrId;
 
   useEffect(() => {
     if (ideaId) {
@@ -32,7 +36,7 @@ export default function IdeaDetailPage() {
   }, [ideaId]);
 
   // Show loading spinner until project is loaded
-  if (isLoading || !ideaId || !selectedProject || selectedProject.id !== ideaId) {
+  if (isLoading || !ideaId || !selectedProject) {
     return (
       <div className="min-h-screen flex items-center justify-center">
         <div className="w-16 h-16 border-4 border-white/10 border-t-white rounded-full animate-spin" />
