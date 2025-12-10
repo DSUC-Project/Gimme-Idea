@@ -6,6 +6,22 @@ ALTER TABLE projects DROP CONSTRAINT IF EXISTS projects_category_check;
 
 -- Add the new constraint with all supported categories
 ALTER TABLE projects ADD CONSTRAINT projects_category_check
-  CHECK (category IN ('DeFi', 'NFT', 'Gaming', 'Infrastructure', 'DAO', 'DePIN', 'Social', 'Mobile', 'Security'));
+  CHECK (category IN (
+    'DeFi', 
+    'NFT', 
+    'Gaming', 
+    'Infrastructure', 
+    'DAO', 
+    'DePIN', 
+    'Social', 
+    'Mobile', 
+    'Security',
+    'Payment',
+    'Developer Tooling',
+    'ReFi',
+    'Content',
+    'Dapp',
+    'Blinks'
+  ));
 
 COMMIT;
