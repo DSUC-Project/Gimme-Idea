@@ -110,6 +110,14 @@ export const ConnectWalletPopup = () => {
       select(selectedWallet.adapter.name);
       await connect();
     } catch (error: any) {
+      // Ignore errors from other wallet extensions (like MetaMask)
+      if (error.message?.includes('MetaMask') || 
+          error.message?.includes('Ethereum') ||
+          error.name === 'WalletNotSelectedError') {
+        console.log('Ignoring non-Solana wallet error:', error.message);
+        return;
+      }
+      
       console.error('Wallet connection error:', error);
       
       if (error.message?.includes('User rejected') || error.message?.includes('canceled')) {
