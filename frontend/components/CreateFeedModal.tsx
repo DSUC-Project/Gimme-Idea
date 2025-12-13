@@ -162,23 +162,6 @@ export const CreateFeedModal: React.FC<CreateFeedModalProps> = ({
                     <p className="text-xs text-gray-500">Not in Discover, but anyone with link can view</p>
                   </div>
                 </button>
-
-                {/* Private */}
-                <button
-                  type="button"
-                  onClick={() => setVisibility('private')}
-                  className={`w-full flex items-center gap-3 px-4 py-3 rounded-xl border transition-all text-left ${
-                    visibility === 'private'
-                      ? 'bg-purple-500/20 border-purple-500/50'
-                      : 'bg-white/5 border-white/10 hover:bg-white/10'
-                  }`}
-                >
-                  <Lock className={`w-5 h-5 ${visibility === 'private' ? 'text-purple-400' : 'text-gray-400'}`} />
-                  <div>
-                    <p className={`font-medium ${visibility === 'private' ? 'text-purple-400' : 'text-white'}`}>Private</p>
-                    <p className="text-xs text-gray-500">Only you can see this feed</p>
-                  </div>
-                </button>
               </div>
             </div>
 
